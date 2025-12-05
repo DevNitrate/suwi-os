@@ -40,7 +40,7 @@ pub extern "C" fn kmain() -> ! {
 
     let color: Color = Color::new(&framebuffer, 255, 255, 255);
 
-    render_text(&framebuffer, "hello, world", 100, 100, 10, &color);
+    render_text(&framebuffer, "Hello, world !", 0, 0, 5, &color);
 
     hcf()    
 }
