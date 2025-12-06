@@ -1,5 +1,7 @@
 use limine::framebuffer::Framebuffer;
 
+use crate::u8_to_hex;
+
 const FONT: [u64; 94] = [
     0x1818181818001800,
     0x6666660000000000,
@@ -141,6 +143,7 @@ pub fn render_char(framebuffer: &Framebuffer, c: char, x: u64, y: u64, color: &C
     for row in 0..8 {
         let row_bits = (glyph >> ((7 - row) * 8)) & 0xFF; 
         for bit in 0..8 {
+            render_rect(framebuffer, x + (bit * font_size), y + (row as u64 * font_size), font_size, font_size, &Color::new(framebuffer, 13, 13, 13));
             if (row_bits >> (7 - bit)) & 1 == 1 {
                 render_rect(framebuffer, x + (bit * font_size), y + (row as u64 * font_size), font_size, font_size, color);
             }
@@ -148,13 +151,16 @@ pub fn render_char(framebuffer: &Framebuffer, c: char, x: u64, y: u64, color: &C
     }
 }
 
-pub fn render_text(framebuffer: &Framebuffer, string: &str, x: u64, y: u64, font_size: u64, color: &Color) {
+pub fn render_text<T: AsRef<[u8]>>(framebuffer: &Framebuffer, string: T, x: u64, y: u64, font_size: u64, color: &Color) {
     let offset_add: u64 = (font_size * 8) + 2;
 
     let mut x_offset: u64 = 0;
     let mut y_offset: u64 = 0;
 
-    for c in string.chars() {
+    let bytes: &[u8] = string.as_ref();
+
+    for b in bytes {
+        let c: char = *b as char;
         if (c as u8) > 32 && (c as u8) < 127 {
             render_char(framebuffer, c, x + x_offset, y + y_offset, color, font_size);
             x_offset += offset_add;
@@ -165,9 +171,11 @@ pub fn render_text(framebuffer: &Framebuffer, string: &str, x: u64, y: u64, font
             x_offset += offset_add;
         } else if c == '\t' {
             x_offset += offset_add * 4;
+        } else if c == '\0' {
+            
         } else {
             let col: Color = Color::new(framebuffer, 255, 0, 0);
-            render_text(framebuffer, "unknow char, panic occured", x + x_offset, y + y_offset, font_size, &col);
+            render_text(framebuffer, u8_to_hex(c as u8), x + x_offset, y + y_offset, font_size, &col);
             panic!()
         }
     }

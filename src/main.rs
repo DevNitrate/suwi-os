@@ -2,12 +2,13 @@
 #![no_main]
 
 mod framebuffer;
+mod keyboard;
 
 use core::{arch::asm, panic::PanicInfo};
 
-use limine::{BaseRevision, framebuffer::Framebuffer, request::{FramebufferRequest, RequestsEndMarker, RequestsStartMarker}};
+use limine::{BaseRevision, request::{FramebufferRequest, RequestsEndMarker, RequestsStartMarker}};
 
-use crate::framebuffer::{Color, render_char, render_rect, render_text, write_pixel};
+use crate::{framebuffer::{Color, render_text, write_pixel}, keyboard::read_key};
 
 #[used]
 #[unsafe(link_section = ".requests")]
@@ -33,17 +34,34 @@ pub extern "C" fn kmain() -> ! {
     let framebuffer = framebuffer_response.framebuffers().next().unwrap();
     for x in 0..framebuffer.width() {
         for y in 0..framebuffer.height() {
-            let col: Color = Color::new(&framebuffer, ((x as f64 / framebuffer.width() as f64) * 255.0) as u8, ((y as f64 / framebuffer.height() as f64) * 255.0) as u8, 0);
+            let col: Color = Color::new(&framebuffer, 13, 13, 13);
             write_pixel(&framebuffer, x, y, &col);
         }
     }
 
     let color: Color = Color::new(&framebuffer, 255, 255, 255);
-
-    render_text(&framebuffer, "Hello, world !", 0, 0, 5, &color);
+    let mut keys: [u8; 256] = [0; 256];
+    let mut k_idx: usize = 0;
+    
+    loop {
+        keys[k_idx] = read_key();
+        // render_text(&framebuffer, u8_to_hex(key[0]), 0, 0, 5, &color);
+        render_text(&framebuffer, &keys[0..k_idx], 0, 0, 5, &color);
+        k_idx += 1;
+    }
 
     hcf()    
 }
+
+pub fn u8_to_hex(n: u8) -> [u8; 4] {
+    const LUT: &[u8; 16] = b"0123456789ABCDEF";
+
+    let high = LUT[(n >> 4) as usize];
+    let low  = LUT[(n & 0xF) as usize];
+
+    [b'0', b'x', high, low]
+}
+
 
 fn hcf() -> ! {
     loop {
@@ -53,5 +71,10 @@ fn hcf() -> ! {
 
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
+    let framebuffer_response = FRAMEBUFFER_REQUEST.get_response().unwrap();
+    let framebuffer = framebuffer_response.framebuffers().next().unwrap();
+
+    render_text(&framebuffer, "panic occured", 200, 200, 10, &Color::new(&framebuffer, 255, 0, 0));
+
     hcf()
 }
