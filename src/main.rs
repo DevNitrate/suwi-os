@@ -4,12 +4,14 @@
 mod framebuffer;
 mod keyboard;
 mod paging;
+mod gdt;
+mod idt;
 
 use core::{arch::asm, panic::PanicInfo};
 
 use limine::{BaseRevision, request::{FramebufferRequest, RequestsEndMarker, RequestsStartMarker}};
 
-use crate::{framebuffer::{Color, render_text, write_pixel}, keyboard::read_key};
+use crate::{framebuffer::{Color, render_text, write_pixel}, gdt::{load_gdt_tss}, keyboard::read_key};
 
 #[used]
 #[unsafe(link_section = ".requests")]
@@ -40,6 +42,8 @@ pub extern "C" fn kmain() -> ! {
         }
     }
 
+    load_gdt_tss();
+
     let color: Color = Color::new(&framebuffer, 255, 255, 255);
     let mut keys: [u8; 256] = [0; 256];
     let mut k_idx: usize = 0;
@@ -62,6 +66,24 @@ pub fn u8_to_hex(n: u8) -> [u8; 4] {
 
     [b'0', b'x', high, low]
 }
+
+pub fn u64_to_hex(n: u64) -> [u8; 18] {
+    const LUT: &[u8; 16] = b"0123456789ABCDEF";
+
+    let mut buf = [b'0'; 18];
+    buf[0] = b'0';
+    buf[1] = b'x';
+
+    for i in 0..16 {
+        // Extract each nibble (4 bits) from most-significant to least-significant
+        let shift = 60 - i * 4;  // 60, 56, 52, ..., 0
+        let nibble = ((n >> shift) & 0xF) as usize;
+        buf[2 + i] = LUT[nibble];
+    }
+
+    buf
+}
+
 
 
 fn hcf() -> ! {
