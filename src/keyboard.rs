@@ -64,13 +64,20 @@ pub fn read_key() -> u8 {
                 _ => b'\0'
             };
 
+            if c == 0x01 {
+                const SLP_EN: u16 = 1 << 13; // bit 13
+                const SLP_TYP_S5: u16 = 0x7 << 10;
+                let pm1a_ctrl = 0x1004 as *mut u16;
+                unsafe { pm1a_ctrl.write_volatile((SLP_TYP_S5 << 10) | SLP_EN); }
+            }
+
             if unsafe { SHIFT == true } && (res >= b'a' &&  res <= b'z') {
                 res -= 32;
             }
 
             return res;
 
-            return c;
+            // return c;
         }
     }
 }

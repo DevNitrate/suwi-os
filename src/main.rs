@@ -3,6 +3,7 @@
 
 mod framebuffer;
 mod keyboard;
+mod paging;
 
 use core::{arch::asm, panic::PanicInfo};
 
@@ -44,13 +45,13 @@ pub extern "C" fn kmain() -> ! {
     let mut k_idx: usize = 0;
     
     loop {
-        keys[k_idx] = read_key();
-        // render_text(&framebuffer, u8_to_hex(key[0]), 0, 0, 5, &color);
+        let key: u8 = read_key();
+        keys[k_idx] = key;
+        // render_text(&framebuffer, u8_to_hex(keys[0]), 0, 0, 5, &color);
         render_text(&framebuffer, &keys[0..k_idx], 0, 0, 5, &color);
         k_idx += 1;
     }
-
-    hcf()    
+    
 }
 
 pub fn u8_to_hex(n: u8) -> [u8; 4] {
