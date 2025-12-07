@@ -81,8 +81,15 @@ dependencies = [
  "lazy_static",
  "limine",
  "spin 0.10.0",
+ "volatile 0.2.7",
  "x86_64",
 ]
+
+[[package]]
+name = "volatile"
+version = "0.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6b06ad3ed06fef1713569d547cdbdb439eafed76341820fb0e0344f29a41945"
 
 [[package]]
 name = "volatile"
@@ -100,5 +107,5 @@ dependencies = [
  "bitflags",
  "const_fn",
  "rustversion",
- "volatile",
+ "volatile 0.4.6",
 ]

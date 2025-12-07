@@ -7,7 +7,7 @@ use spin::Mutex;
 use crate::{FRAMEBUFFER};
 
 lazy_static! {
-    pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer::new(5));
+    pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer::new(2));
 }
 
 const FONT: [u64; 94] = [
@@ -164,6 +164,15 @@ impl Writer {
             }
         }
     }
+
+    pub fn set_color(&mut self, color: Color) {
+        self.color = color;
+    }
+
+    pub fn set_coords(&mut self, x: u64, y: u64) {
+        self.x_pos = x;
+        self.y_pos = y;
+    }
 }
 
 impl fmt::Write for Writer {
@@ -199,6 +208,8 @@ pub fn clear_screen() {
             write_pixel(x, y, &col);
         }
     }
+
+    WRITER.lock().set_coords(5, 5);
 }
 
 pub struct Color {
@@ -215,7 +226,7 @@ impl Color {
         }
     }
 
-    pub fn set(&mut self, r: u8, g: u8, b: u8) {
+    pub fn _set(&mut self, r: u8, g: u8, b: u8) {
         let framebuffer: &Framebuffer = get_framebuffer();
         let value: u32 = ((r as u32) << framebuffer.red_mask_shift()) | ((g as u32) << framebuffer.green_mask_shift()) | ((b as u32) << framebuffer.blue_mask_shift());
 
@@ -266,7 +277,7 @@ pub fn render_char(c: char, x: u64, y: u64, color: &Color, font_size: u64) {
     }
 }
 
-pub fn render_text<T: AsRef<[u8]>>(string: T, x: u64, y: u64, font_size: u64, color: &Color) {
+pub fn _render_text<T: AsRef<[u8]>>(string: T, x: u64, y: u64, font_size: u64, color: &Color) {
     let offset_add: u64 = (font_size * 8) + 2;
 
     let mut x_offset: u64 = 0;
@@ -289,9 +300,8 @@ pub fn render_text<T: AsRef<[u8]>>(string: T, x: u64, y: u64, font_size: u64, co
         } else if c == '\0' {
             
         } else {
-            let col: Color = Color::new(255, 0, 0);
-            // render_text(u8_to_hex(c as u8), x + x_offset, y + y_offset, font_size, &col);
-            panic!()
+            WRITER.lock().set_color(Color::new(255, 0, 0));
+            panic!("unsupported char: {}", c)
         }
     }
 }

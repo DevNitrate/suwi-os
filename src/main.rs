@@ -8,12 +8,13 @@ mod paging;
 mod gdt;
 mod idt;
 
-use core::{arch::asm, panic::PanicInfo, fmt::Write};
+use core::{arch::asm, panic::PanicInfo};
 
 use limine::{BaseRevision, framebuffer::Framebuffer, request::{FramebufferRequest, RequestsEndMarker, RequestsStartMarker}};
 use lazy_static::lazy_static;
+use volatile::{Volatile};
 
-use crate::{framebuffer::{Color, WRITER, Writer, clear_screen, get_framebuffer, render_text, write_pixel}, idt::load_idt, keyboard::read_key};
+use crate::{framebuffer::{Color, WRITER, clear_screen}, gdt::init_gdt, idt::init_idt, keyboard::read_key};
 
 #[used]
 #[unsafe(link_section = ".requests")]
@@ -38,24 +39,31 @@ lazy_static! {
 #[unsafe(no_mangle)]
 pub extern "C" fn kmain() -> ! {
     assert!(BASE_REVISION.is_supported());
+    init_gdt();
+    init_idt();
 
     clear_screen();
 
-    load_idt();
     // let color: Color = Color::new(255, 0, 0);
     
     println!("test: {}", 1234);
-    println!("test: {}", 5678);
 
     loop {
         let key: u8 = read_key();
         // render_text(&framebuffer, u8_to_hex(keys[0]), 0, 0, 5, &color);
         WRITER.lock().write_byte(key);
         if key == b'p' {
-            panic!("voluntary");
+            #[allow(unconditional_recursion)]
+            fn overflow() {
+                overflow();
+                Volatile::new(0).read();
+            }
+            overflow();
+            unsafe {
+                *(0xdeadbeef as *mut u8) = 42;
+            }
         }
     }
-    
 }
 
 fn hcf() -> ! {
@@ -66,6 +74,8 @@ fn hcf() -> ! {
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
+    clear_screen();
+    WRITER.lock().set_color(Color::new(255, 0, 0));
     println!("\n{}", info);
     hcf()
 }
